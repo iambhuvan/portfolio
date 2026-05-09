@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { profile } from '@/lib/data';
 
@@ -14,6 +15,11 @@ type Status = 'idle' | 'sending' | 'success' | 'error';
 const ease = [0.16, 1, 0.3, 1] as const;
 
 export default function BookAppointment({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const [form, setForm] = useState({
     name: '',
     email: '',
@@ -99,11 +105,14 @@ export default function BookAppointment({ open, onClose }: { open: boolean; onCl
     setErrorMsg('');
   };
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 z-[100] flex items-center justify-center px-4 py-8 overflow-y-auto"
+          className="fixed inset-0 flex items-center justify-center px-4 py-8 overflow-y-auto"
+          style={{ zIndex: 9999 }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -292,7 +301,8 @@ export default function BookAppointment({ open, onClose }: { open: boolean; onCl
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }
 
