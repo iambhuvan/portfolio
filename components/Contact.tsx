@@ -1,7 +1,9 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import { useState } from 'react';
 import { profile } from '@/lib/data';
+import BookAppointment from '@/components/BookAppointment';
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
@@ -13,8 +15,10 @@ const links = [
 ];
 
 export default function Contact() {
+  const [bookOpen, setBookOpen] = useState(false);
   return (
     <section id="contact" className="section pb-32">
+      <BookAppointment open={bookOpen} onClose={() => setBookOpen(false)} />
       <div className="max-w-7xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -36,14 +40,38 @@ export default function Contact() {
             is email — I read everything.
           </p>
 
-          <a
-            href={profile.socials.email}
-            data-hover
-            className="inline-flex items-center gap-3 mt-10 text-2xl md:text-4xl display text-amber-50 hover:text-ember transition-colors"
-          >
-            <span className="mono text-sm text-ember">→</span>
-            {profile.email}
-          </a>
+          <div className="flex flex-wrap items-center gap-4 mt-10">
+            <a
+              href={profile.socials.email}
+              data-hover
+              className="inline-flex items-center gap-3 text-2xl md:text-4xl display text-amber-50 hover:text-ember transition-colors"
+            >
+              <span className="mono text-sm text-ember">→</span>
+              {profile.email}
+            </a>
+            <button
+              type="button"
+              onClick={() => setBookOpen(true)}
+              data-hover
+              className="ml-0 md:ml-6 inline-flex items-center gap-2 px-5 py-3 transition-all"
+              style={{
+                background: '#9ad03d',
+                color: '#000',
+                fontFamily: 'var(--font-inter), sans-serif',
+                fontWeight: 600,
+                fontSize: 11,
+                letterSpacing: '0.22em',
+                textTransform: 'uppercase',
+                boxShadow: '0 0 22px rgba(154,208,61,0.4)',
+              }}
+            >
+              <span
+                className="inline-block w-1.5 h-1.5 rounded-full animate-pulse"
+                style={{ background: '#000' }}
+              />
+              Book a Meeting →
+            </button>
+          </div>
 
           <div className="grid md:grid-cols-4 gap-px bg-amber-200/10 mt-20 border-y border-amber-200/10">
             {links.map((l) => (
