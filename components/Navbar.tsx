@@ -40,9 +40,10 @@ export default function Navbar() {
         <a
           href="#top"
           onClick={(e) => onClickLink(e, '#top')}
-          className="mono text-sm tracking-widest uppercase text-amber-100 hover:text-amber-300 transition-colors"
+          className="text-base md:text-lg tracking-tight text-amber-50 hover:text-ember transition-colors whitespace-nowrap"
+          style={{ fontFamily: 'var(--font-inter), system-ui, sans-serif', fontWeight: 600 }}
         >
-          BN<span className="text-ember">.</span>
+          Bhuvan Nallamothu
         </a>
         <ul className="hidden md:flex items-center gap-8">
           {links.map((link, i) => (

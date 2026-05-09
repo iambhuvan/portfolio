@@ -93,6 +93,29 @@ function ProjectVisual({ project }: { project: Project }) {
       return <PipelineVisual color={project.accent} />;
     case 'retina':
       return <RadarVisual color={project.accent} />;
+    // ----- newly added projects -----
+    case 'triton-3d':
+      return <KernelVisual color={project.accent} />;
+    case 'agentstack':
+      return <NodesVisual color={project.accent} />;
+    case 'indian-legal-llm':
+      return <RadarVisual color={project.accent} />;
+    case 'photon-brain':
+      return <TreeVisual color={project.accent} />;
+    case 'alexa-at-home':
+      return <NodesVisual color={project.accent} />;
+    case 'cbir-depth':
+      return <KernelVisual color={project.accent} />;
+    case 'bert-from-scratch':
+      return <TreeVisual color={project.accent} />;
+    case 'smartfarm':
+      return <RadarVisual color={project.accent} />;
+    case 'pneumonia-detect':
+      return <RadarVisual color={project.accent} />;
+    case 'kanbas-lms':
+      return <PipelineVisual color={project.accent} />;
+    case 'premier-visual':
+      return <GridVisual color={project.accent} />;
     default:
       return <WaveformVisual color={project.accent} />;
   }

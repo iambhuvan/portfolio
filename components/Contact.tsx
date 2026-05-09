@@ -66,11 +66,6 @@ export default function Contact() {
             ))}
           </div>
 
-          <footer className="mt-24 pt-8 border-t border-amber-200/10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mono text-[10px] uppercase tracking-[0.25em] text-amber-300/40">
-            <span>© {new Date().getFullYear()} {profile.name}</span>
-            <span>Built with Next.js · R3F · GSAP · Lenis</span>
-            <span>Mountain View ↔ Pittsburgh</span>
-          </footer>
         </motion.div>
       </div>
     </section>

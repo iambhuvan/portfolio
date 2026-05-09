@@ -11,10 +11,11 @@ const config: Config = {
           700: '#070b03',
           600: '#0a1006',
         },
-        // NOTE: 'amber' tokens repurposed as NVIDIA-green shades site-wide.
+        // NOTE: 'amber' tokens repurposed: 50/100 = warm cream (no green tint),
+        // 200+ = NVIDIA-green shades for accents.
         amber: {
-          50: '#f3fbe6',
-          100: '#eaf6d6',
+          50: '#fff5e0',
+          100: '#f5e8c8',
           200: '#d0ee9c',
           300: '#b6e068',
           400: '#98cf30',

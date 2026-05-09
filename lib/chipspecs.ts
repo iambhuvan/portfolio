@@ -1,3 +1,61 @@
+export type ZoneKey = 'compute' | 'hbm' | 'l2' | 'nvlink' | 'pcie' | 'bridge';
+
+export type ZoneDetail = {
+  title: string;
+  main: string;
+  unit: string;
+  rows: { k: string; v: string }[];
+  description: string;
+};
+
+export type FunctionBlock = { label: string; count?: number; hint?: string };
+
+export type Architecture = {
+  // GPU monolithic / dual-die
+  sms_active?: number;
+  sms_physical?: number;
+  gpcs?: number;
+  sms_per_gpc?: number;
+  tcs_per_sm?: number;
+  l1_per_sm_kb?: number;
+  l2_mb?: number;
+  l2_slices?: number;
+  l2_hit_ns?: number;
+  // Memory
+  hbm_active?: number;
+  hbm_physical?: number;
+  per_stack_gb?: number;
+  per_stack_bw_gbs?: number;
+  hbm_bus_bits?: number;
+  hbm_vendor?: string;
+  hbm_height?: string;
+  // Interconnect
+  nvlink_lanes?: number;
+  nvlink_per_lane_gbs?: number;
+  pcie_lanes?: number;
+  pcie_gen?: number;
+  pcie_bw_gbs?: number;
+  // Bridge (dual-die)
+  bridge_name?: string;
+  bridge_bw_tbs?: number;
+  bridge_latency_ns?: number;
+  // Chiplet
+  xcds?: number;
+  cus_per_xcd?: number;
+  iods?: number;
+  // Trainium
+  neuron_cores?: number;
+  on_chip_sram_mb?: number;
+  // TPU
+  matrix_units?: number;
+  // Cerebras
+  ai_cores?: number;
+  // Function blocks shown along bottom of die
+  blocks: FunctionBlock[];
+  // Microarchitecture flags
+  features_micro: string[];
+};
+
 export type ChipSpec = {
   id: string;
   vendor: string;
@@ -31,7 +89,137 @@ export type ChipSpec = {
   positioning: string;
   best_for: string[];
   why_it_matters: string;
+  architecture: Architecture;
 };
+
+export function getZoneDetail(chip: ChipSpec, zone: ZoneKey): ZoneDetail {
+  const c = chip.compute;
+  const a = chip.architecture;
+  switch (zone) {
+    case 'compute': {
+      const main = c.fp4 != null ? `${c.fp4}` : c.fp8 != null ? `${c.fp8}` : c.bf16 != null ? `${c.bf16}` : '—';
+      const unit = c.fp4 != null ? 'PFLOPS · FP4 sparse' : c.fp8 != null ? 'PFLOPS · FP8 sparse' : 'PFLOPS · BF16';
+      const rows: { k: string; v: string }[] = [];
+      if (a.sms_active != null) rows.push({ k: 'SMs (active)', v: `${a.sms_active}${a.sms_physical ? ` / ${a.sms_physical}` : ''}` });
+      if (a.gpcs != null) rows.push({ k: 'GPCs', v: `${a.gpcs}${a.sms_per_gpc ? ` × ${a.sms_per_gpc} SMs` : ''}` });
+      if (a.tcs_per_sm != null && a.sms_active != null) rows.push({ k: 'Tensor Cores', v: `${a.tcs_per_sm * a.sms_active} (${a.tcs_per_sm}/SM)` });
+      if (a.l1_per_sm_kb != null) rows.push({ k: 'L1 / SM', v: `${a.l1_per_sm_kb} KB` });
+      if (a.xcds != null) rows.push({ k: 'XCDs', v: `${a.xcds}${a.cus_per_xcd ? ` × ${a.cus_per_xcd} CUs = ${a.xcds * a.cus_per_xcd}` : ''}` });
+      if (a.iods != null) rows.push({ k: 'I/O dies', v: `${a.iods}` });
+      if (a.neuron_cores != null) rows.push({ k: 'NeuronCore-v3', v: `${a.neuron_cores}` });
+      if (a.on_chip_sram_mb != null) rows.push({ k: 'On-chip SRAM', v: `${a.on_chip_sram_mb} MB` });
+      if (a.matrix_units != null) rows.push({ k: 'MMU units', v: `${a.matrix_units}` });
+      if (c.fp4 != null) rows.push({ k: 'FP4 sparse', v: `${c.fp4} PFLOPS` });
+      if (c.fp8 != null) rows.push({ k: 'FP8 sparse', v: `${c.fp8} PFLOPS` });
+      if (c.bf16 != null) rows.push({ k: 'BF16', v: `${c.bf16} PFLOPS` });
+      if (c.tf32 != null) rows.push({ k: 'TF32', v: `${c.tf32} PFLOPS` });
+      if (c.fp32 != null) rows.push({ k: 'FP32', v: `${c.fp32} PFLOPS` });
+      if (c.fp64 != null) rows.push({ k: 'FP64', v: `${c.fp64} PFLOPS` });
+      if (c.int8 != null) rows.push({ k: 'INT8', v: `${c.int8} POPS` });
+      return {
+        title: 'COMPUTE',
+        main,
+        unit,
+        rows,
+        description: chip.arch + (a.features_micro?.[0] ? ' · ' + a.features_micro[0] : ''),
+      };
+    }
+    case 'hbm': {
+      const perStack = a.per_stack_bw_gbs ?? (chip.memory.stacks > 0 ? Math.round(chip.memory.bw_tbs * 1000 / chip.memory.stacks) : null);
+      const rows: { k: string; v: string }[] = [
+        { k: 'type', v: a.hbm_height ?? chip.memory.type },
+        { k: 'capacity', v: `${chip.memory.capacity_gb} GB${a.per_stack_gb ? ` (${a.per_stack_gb} GB × ${a.hbm_active ?? chip.memory.stacks})` : ''}` },
+        { k: 'bandwidth', v: `${chip.memory.bw_tbs} TB/s` },
+        ...(perStack ? [{ k: 'per-stack BW', v: `${perStack} GB/s` }] : []),
+        ...(a.hbm_bus_bits ? [{ k: 'bus width', v: `${a.hbm_bus_bits.toLocaleString()}-bit` }] : []),
+        ...(a.hbm_active && a.hbm_physical
+          ? [{ k: 'stacks', v: `${a.hbm_active} active / ${a.hbm_physical} physical` }]
+          : a.hbm_active ? [{ k: 'stacks', v: String(a.hbm_active) }] : []),
+        ...(a.hbm_vendor ? [{ k: 'vendor', v: a.hbm_vendor }] : []),
+      ];
+      return {
+        title: 'MEMORY',
+        main: `${chip.memory.capacity_gb}`,
+        unit: `GB · ${chip.memory.type}`,
+        rows,
+        description:
+          'High-bandwidth memory stacked vertically with through-silicon vias. The bandwidth ceiling for any inference workload — KV-cache reads live here.',
+      };
+    }
+    case 'l2': {
+      const size = a.l2_mb != null ? `${a.l2_mb} MB` : 'on-die';
+      const subtitle = chip.id === 'mi300x' ? 'Infinity Cache' : 'shared L2';
+      const rows: { k: string; v: string }[] = [
+        { k: 'size', v: size },
+        ...(a.l2_slices ? [{ k: 'slices', v: String(a.l2_slices) }] : []),
+        ...(a.l2_hit_ns ? [{ k: 'hit latency', v: `~${a.l2_hit_ns} ns` }] : []),
+        { k: 'sharing', v: chip.id === 'mi300x' ? 'across all XCDs' : 'all SMs · cluster scope' },
+        { k: 'live data', v: 'KV-cache · partial sums · activations' },
+      ];
+      return {
+        title: chip.id === 'mi300x' ? 'INFINITY CACHE' : 'L2 CACHE',
+        main: a.l2_mb != null ? String(a.l2_mb) : '—',
+        unit: a.l2_mb != null ? `MB · ${subtitle}` : subtitle,
+        rows,
+        description:
+          'Last-level cache shared across compute. KV-cache ops live and die here — every miss hits HBM at 10× the latency. Slice count determines arbitration parallelism.',
+      };
+    }
+    case 'nvlink': {
+      const isNVLink = chip.interconnect.fabric.includes('NVLink');
+      const rows: { k: string; v: string }[] = [
+        { k: 'fabric', v: chip.interconnect.fabric },
+        { k: 'bandwidth', v: `${chip.interconnect.bw_tbs} TB/s` },
+        ...(a.nvlink_lanes ? [{ k: 'lanes', v: String(a.nvlink_lanes) }] : []),
+        ...(a.nvlink_per_lane_gbs ? [{ k: 'per-lane BW', v: `${a.nvlink_per_lane_gbs} GB/s bidir` }] : []),
+        { k: 'protocol', v: isNVLink ? 'NVLink + NVSwitch' : chip.interconnect.fabric },
+        { k: 'used for', v: 'tensor-parallel · all-reduce' },
+      ];
+      return {
+        title: 'INTERCONNECT',
+        main: `${chip.interconnect.bw_tbs}`,
+        unit: 'TB/s · ' + chip.interconnect.fabric,
+        rows,
+        description:
+          'GPU-to-GPU fabric. Sets the ceiling for tensor-parallel scale and how aggressively you can shard MoE experts across devices.',
+      };
+    }
+    case 'pcie': {
+      const rows: { k: string; v: string }[] = [
+        { k: 'spec', v: chip.interconnect.pcie || '—' },
+        ...(a.pcie_bw_gbs ? [{ k: 'bandwidth', v: `${a.pcie_bw_gbs} GB/s bidir` }] : []),
+        ...(a.pcie_lanes ? [{ k: 'lanes', v: `×${a.pcie_lanes}` }] : []),
+        ...(a.pcie_gen ? [{ k: 'gen', v: `${a.pcie_gen}.0` }] : []),
+        { k: 'role', v: 'kernel queue · weight load' },
+      ];
+      return {
+        title: 'HOST INTERFACE',
+        main: chip.interconnect.pcie?.split(' ').pop() || '—',
+        unit: 'CPU ↔ GPU control',
+        rows,
+        description:
+          'Slow path. Host writes the kernel launch queue; GPU pulls weights and writes back results. Cold-start latency lives here.',
+      };
+    }
+    case 'bridge': {
+      const rows: { k: string; v: string }[] = [
+        { k: 'name', v: a.bridge_name ?? 'die-to-die' },
+        { k: 'bandwidth', v: `${a.bridge_bw_tbs ?? 10} TB/s bidir` },
+        ...(a.bridge_latency_ns ? [{ k: 'latency', v: `~${a.bridge_latency_ns} ns hop` }] : []),
+        { k: 'topology', v: '2 reticle-limit dies' },
+        { k: 'compiler', v: 'transparent · single GPU' },
+      ];
+      return {
+        title: a.bridge_name?.toUpperCase() ?? 'DIE-TO-DIE',
+        main: String(a.bridge_bw_tbs ?? 10),
+        unit: 'TB/s · die-to-die',
+        rows,
+        description:
+          "First-gen die-to-die fabric on Blackwell. Two reticle-limit dies stitched into one GPU — the model-parallel boundary doesn't have to bisect them.",
+      };
+    }
+  }
+}
 
 export const CHIP_SPECS: ChipSpec[] = [
   {
@@ -69,6 +257,49 @@ export const CHIP_SPECS: ChipSpec[] = [
     ],
     why_it_matters:
       'FP4 doubles compute density vs FP8 at minimal accuracy loss with the right calibration. The model-parallel boundary stays at the chip, not the die.',
+    architecture: {
+      sms_active: 160,
+      sms_physical: 192,
+      gpcs: 16,
+      sms_per_gpc: 10,
+      tcs_per_sm: 4,
+      l1_per_sm_kb: 256,
+      l2_mb: 100,
+      l2_slices: 24,
+      l2_hit_ns: 30,
+      hbm_active: 8,
+      hbm_physical: 8,
+      per_stack_gb: 24,
+      per_stack_bw_gbs: 1000,
+      hbm_bus_bits: 8192,
+      hbm_vendor: 'SK hynix · Micron',
+      hbm_height: '8-Hi · HBM3e',
+      nvlink_lanes: 18,
+      nvlink_per_lane_gbs: 100,
+      pcie_lanes: 16,
+      pcie_gen: 5,
+      pcie_bw_gbs: 128,
+      bridge_name: 'NV-HBI',
+      bridge_bw_tbs: 10,
+      bridge_latency_ns: 10,
+      blocks: [
+        { label: 'Transformer Engine v2', hint: 'FP4 / FP6 / FP8 native' },
+        { label: 'Decompression Engine', hint: 'GPU-accelerated GZIP / Snappy / LZ4' },
+        { label: 'NVDEC', count: 7, hint: '7th-gen video decode' },
+        { label: 'JPEG', count: 1, hint: '5x JPEG decoder unit' },
+        { label: 'OFA', count: 1, hint: 'Optical Flow Accelerator' },
+        { label: 'TMA', hint: 'Tensor Memory Accelerator' },
+        { label: 'Copy Engines', count: 7 },
+      ],
+      features_micro: [
+        'FP4 native compute (2× FP8 throughput)',
+        'NV-HBI die-to-die transparent to compiler',
+        'Confidential Compute (TEE I/O)',
+        '2nd-gen Transformer Engine with FP4 calibration',
+        'RAS engine with predictive failure',
+        'Decompression engine for direct-from-storage',
+      ],
+    },
   },
   {
     id: 'gb200',
@@ -99,6 +330,33 @@ export const CHIP_SPECS: ChipSpec[] = [
     ],
     why_it_matters:
       'Eliminates the model-parallel boundary across 72 chips. Workloads that previously required complex pipeline+TP+EP partitioning collapse into a single-domain program.',
+    architecture: {
+      sms_active: 160 * 72,
+      gpcs: 16 * 72,
+      tcs_per_sm: 4,
+      l2_mb: 100 * 72,
+      hbm_active: 8 * 72,
+      per_stack_gb: 24,
+      per_stack_bw_gbs: 1000,
+      hbm_vendor: 'SK hynix · Micron',
+      hbm_height: '8-Hi · HBM3e',
+      nvlink_lanes: 18,
+      bridge_name: 'NVLink Switch (rack-scale)',
+      bridge_bw_tbs: 130,
+      blocks: [
+        { label: 'Grace CPU', count: 36, hint: '72-core Arm Neoverse V2 each' },
+        { label: 'B200 GPU', count: 72, hint: 'Blackwell dual-die' },
+        { label: 'NVLink Switch Tray', count: 9, hint: '14.4 TB/s each' },
+        { label: 'Liquid Cooling', hint: '120 kW rack' },
+      ],
+      features_micro: [
+        '72-GPU NVLink domain — single memory namespace',
+        'Coherent CPU↔GPU via NVLink-C2C (900 GB/s)',
+        '13.5 TB unified HBM3e at 576 TB/s aggregate',
+        '1.4 EF FP4 sparse per rack (NVL72)',
+        'Liquid-cooled, 120 kW per rack',
+      ],
+    },
   },
   {
     id: 'h200',
@@ -134,6 +392,45 @@ export const CHIP_SPECS: ChipSpec[] = [
     ],
     why_it_matters:
       'Memory capacity, not FLOPs, is the bottleneck for most production LLM serving. H200 fixes that without forcing a Blackwell migration.',
+    architecture: {
+      sms_active: 132,
+      sms_physical: 144,
+      gpcs: 8,
+      sms_per_gpc: 18,
+      tcs_per_sm: 4,
+      l1_per_sm_kb: 256,
+      l2_mb: 50,
+      l2_slices: 12,
+      l2_hit_ns: 30,
+      hbm_active: 6,
+      hbm_physical: 6,
+      per_stack_gb: 24,
+      per_stack_bw_gbs: 800,
+      hbm_bus_bits: 6144,
+      hbm_vendor: 'SK hynix · Micron',
+      hbm_height: '8-Hi · HBM3e',
+      nvlink_lanes: 18,
+      nvlink_per_lane_gbs: 50,
+      pcie_lanes: 16,
+      pcie_gen: 5,
+      pcie_bw_gbs: 128,
+      blocks: [
+        { label: 'Transformer Engine', hint: '1st-gen FP8' },
+        { label: 'TMA', hint: 'Tensor Memory Accelerator' },
+        { label: 'DPX', hint: 'Dynamic Programming X (Smith-Waterman / DP graph)' },
+        { label: 'NVDEC', count: 7 },
+        { label: 'JPEG', count: 1 },
+        { label: 'OFA', count: 1 },
+        { label: 'Copy Engines', count: 7 },
+      ],
+      features_micro: [
+        '1.4× HBM bandwidth and 1.76× capacity vs H100',
+        'Same 132 SMs · 528 Tensor Cores as H100',
+        'Drop-in HGX H100 socket compatibility',
+        'Confidential Compute · MIG · 7 instances',
+        'TMA enables async tensor pipelines on warps',
+      ],
+    },
   },
   {
     id: 'h100',
@@ -169,6 +466,47 @@ export const CHIP_SPECS: ChipSpec[] = [
     ],
     why_it_matters:
       'Defined the modern inference stack. 4th-gen Tensor Cores + FP8 made structured-sparse acceleration practical for transformer attention, and TMA unlocked async memory pipelines.',
+    architecture: {
+      sms_active: 132,
+      sms_physical: 144,
+      gpcs: 8,
+      sms_per_gpc: 18,
+      tcs_per_sm: 4,
+      l1_per_sm_kb: 256,
+      l2_mb: 50,
+      l2_slices: 12,
+      l2_hit_ns: 30,
+      hbm_active: 5,
+      hbm_physical: 6,
+      per_stack_gb: 16,
+      per_stack_bw_gbs: 670,
+      hbm_bus_bits: 5120,
+      hbm_vendor: 'SK hynix · Samsung',
+      hbm_height: '8-Hi · HBM3',
+      nvlink_lanes: 18,
+      nvlink_per_lane_gbs: 50,
+      pcie_lanes: 16,
+      pcie_gen: 5,
+      pcie_bw_gbs: 128,
+      blocks: [
+        { label: 'Transformer Engine', hint: '1st-gen FP8 · per-tensor scaling' },
+        { label: 'TMA', hint: 'Tensor Memory Accelerator (async)' },
+        { label: 'DPX', hint: 'Dynamic Programming X (40× CPU on Smith-Waterman)' },
+        { label: 'NVDEC', count: 7 },
+        { label: 'JPEG', count: 1 },
+        { label: 'OFA', count: 1 },
+        { label: 'Copy Engines', count: 7 },
+      ],
+      features_micro: [
+        '4th-gen Tensor Cores · FP8 native (E4M3 + E5M2)',
+        'Structured 2:4 sparsity acceleration (2×)',
+        'TMA: async warp-level tensor copies',
+        'Distributed Shared Memory (cluster scope)',
+        'Thread Block Cluster + Async Pipelines',
+        'Confidential Compute (TEE I/O) · MIG · 7 instances',
+        'PTX 8.0 with mma.sync FP8 / fp8x4.e4m3 / e5m2',
+      ],
+    },
   },
   {
     id: 'a100',
@@ -203,6 +541,44 @@ export const CHIP_SPECS: ChipSpec[] = [
     ],
     why_it_matters:
       'Defined "modern AI" hardware: Tensor Cores became mainstream, sparsity got a hardware path, and the SXM4 form factor became the rack standard.',
+    architecture: {
+      sms_active: 108,
+      sms_physical: 128,
+      gpcs: 7,
+      sms_per_gpc: 16,
+      tcs_per_sm: 4,
+      l1_per_sm_kb: 192,
+      l2_mb: 40,
+      l2_slices: 80,
+      l2_hit_ns: 35,
+      hbm_active: 5,
+      hbm_physical: 6,
+      per_stack_gb: 16,
+      per_stack_bw_gbs: 410,
+      hbm_bus_bits: 5120,
+      hbm_vendor: 'Samsung · SK hynix',
+      hbm_height: '8-Hi · HBM2e',
+      nvlink_lanes: 12,
+      nvlink_per_lane_gbs: 50,
+      pcie_lanes: 16,
+      pcie_gen: 4,
+      pcie_bw_gbs: 64,
+      blocks: [
+        { label: 'Sparse Tensor Cores', hint: '3rd-gen · 2:4 structured sparsity (2×)' },
+        { label: 'BF16 / TF32', hint: 'Standardized formats from Ampere onward' },
+        { label: 'NVDEC', count: 5 },
+        { label: 'OFA', count: 1, hint: 'Optical Flow Accelerator' },
+        { label: 'Copy Engines', count: 5 },
+      ],
+      features_micro: [
+        '3rd-gen Tensor Cores · BF16 + TF32 + INT8 + INT4',
+        'Structured 2:4 sparsity (first generation, 2× FP gain)',
+        'MIG · 7 instances (introduced on A100)',
+        '40 MB L2 across 80 slices',
+        'PCIe Gen 4 ×16 · 64 GB/s host link',
+        'NVLink 3rd gen · 12 links · 600 GB/s aggregate',
+      ],
+    },
   },
   {
     id: 'tr2',
@@ -228,6 +604,37 @@ export const CHIP_SPECS: ChipSpec[] = [
     ],
     why_it_matters:
       "Breaks the NVIDIA monopoly inside one of the largest cloud footprints. The NKI kernel ISA gives you direct silicon access — closer to writing CUDA than calling cuDNN.",
+    architecture: {
+      neuron_cores: 8,
+      on_chip_sram_mb: 96,
+      hbm_active: 4,
+      hbm_physical: 4,
+      per_stack_gb: 24,
+      per_stack_bw_gbs: 730,
+      hbm_vendor: 'Samsung · SK hynix',
+      hbm_height: 'HBM',
+      nvlink_lanes: 0,
+      pcie_lanes: 16,
+      pcie_gen: 5,
+      pcie_bw_gbs: 128,
+      blocks: [
+        { label: 'NeuronCore-v3', count: 8, hint: 'Tensor + Vector + Scalar + GPSIMD' },
+        { label: 'Tensor Engine', hint: 'BF16 / FP8 systolic array' },
+        { label: 'Softmax + Layernorm', hint: 'Hardware accelerator' },
+        { label: 'Stochastic Rounding', hint: 'On-chip RNG for FP8 training' },
+        { label: 'Collective Compute', hint: 'On-chip all-reduce engine' },
+        { label: 'NeuronLink-v3', count: 8, hint: '4-cube torus per instance' },
+      ],
+      features_micro: [
+        '8 NeuronCore-v3 with 4 engine types each',
+        '96 MB on-chip SRAM (per-NC partitioned)',
+        'Custom NKI ISA — programmer-visible silicon',
+        '4-cube NeuronLink-v3 topology',
+        'Hardware FP8 stochastic rounding',
+        'UltraServer interconnect: 16 chips per node',
+        'Available only inside AWS (Bedrock + SageMaker)',
+      ],
+    },
   },
   {
     id: 'mi300x',
@@ -261,6 +668,42 @@ export const CHIP_SPECS: ChipSpec[] = [
     ],
     why_it_matters:
       'Validates the chiplet inference thesis (8 compute dies + 4 I/O dies) at production scale. Proves CUDA is not the only path; ROCm+Triton is now production-credible.',
+    architecture: {
+      xcds: 8,
+      cus_per_xcd: 38,
+      iods: 4,
+      l2_mb: 256,
+      l2_slices: 32,
+      l2_hit_ns: 25,
+      hbm_active: 8,
+      hbm_physical: 8,
+      per_stack_gb: 24,
+      per_stack_bw_gbs: 660,
+      hbm_bus_bits: 8192,
+      hbm_vendor: 'SK hynix · Micron',
+      hbm_height: '12-Hi · HBM3',
+      nvlink_lanes: 0,
+      pcie_lanes: 16,
+      pcie_gen: 5,
+      pcie_bw_gbs: 128,
+      blocks: [
+        { label: 'XCD', count: 8, hint: '38 CUs each · CDNA 3 · 304 CUs total' },
+        { label: 'IOD', count: 4, hint: 'I/O dies · Infinity Cache · stacked under XCDs' },
+        { label: 'Matrix Cores', hint: 'CDNA 3 · FP8 / BF16 / FP16 / INT8' },
+        { label: 'Infinity Cache', hint: '256 MB L3 across IODs' },
+        { label: 'Infinity Fabric', count: 7, hint: '5.3 TB/s per chip' },
+        { label: 'Video DEC', count: 4 },
+      ],
+      features_micro: [
+        '8 XCDs × 38 CUs = 304 CUs (CDNA 3)',
+        '4 IODs (I/O dies) — 3D-stacked under XCDs',
+        '256 MB Infinity Cache (vs 50 MB H100 L2)',
+        'Matrix Cores: FP8 / BF16 / FP16 / INT8',
+        'Infinity Fabric — coherent CPU↔GPU on MI300A',
+        'ROCm 6 + Triton + HIP toolchain',
+        'OAM module · drop-in form factor',
+      ],
+    },
   },
   {
     id: 'tpu-v5p',
@@ -286,5 +729,37 @@ export const CHIP_SPECS: ChipSpec[] = [
     ],
     why_it_matters:
       'Optical circuit switching reconfigures the topology at runtime — the network becomes part of the compiler. No GPU vendor has shipped this at scale.',
+    architecture: {
+      matrix_units: 4,
+      l2_mb: 96,
+      hbm_active: 4,
+      hbm_physical: 4,
+      per_stack_gb: 24,
+      per_stack_bw_gbs: 690,
+      hbm_bus_bits: 4096,
+      hbm_vendor: 'SK hynix',
+      hbm_height: '8-Hi · HBM3',
+      nvlink_lanes: 0,
+      pcie_lanes: 16,
+      pcie_gen: 5,
+      pcie_bw_gbs: 128,
+      bridge_name: 'OCS Optical Switch',
+      bridge_bw_tbs: 4.8,
+      blocks: [
+        { label: 'Matrix Multiply Unit', count: 4, hint: 'Systolic 128×128 BF16' },
+        { label: 'Vector Unit', count: 4, hint: 'Per-MMU vector co-processor' },
+        { label: 'Scalar Unit', count: 4 },
+        { label: 'On-chip Interconnect', hint: 'High-bandwidth NoC' },
+        { label: 'OCS PHY', hint: 'Optical Circuit Switch transceivers' },
+      ],
+      features_micro: [
+        '4 Matrix Multiply Units · 459 TF BF16 / chip',
+        '8960-chip pod via OCS reconfigurable torus',
+        'Compiler-defined topology (XLA)',
+        'JAX-native deployment path',
+        '95 GB HBM3 · 2.76 TB/s',
+        'Available only on Google Cloud + internal',
+      ],
+    },
   },
 ];
