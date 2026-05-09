@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
+import BookAppointment from '@/components/BookAppointment';
 
 const links = [
   { label: 'Work', href: '#work' },
@@ -12,6 +13,7 @@ const links = [
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
+  const [bookOpen, setBookOpen] = useState(false);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
@@ -59,13 +61,30 @@ export default function Navbar() {
             </li>
           ))}
         </ul>
-        <a
-          href="mailto:bnallamo@andrew.cmu.edu"
-          className="mono text-xs uppercase tracking-[0.2em] text-amber-200 border border-amber-200/40 px-4 py-2 rounded-full hover:bg-amber-200 hover:text-ink-900 transition-all"
+        <button
+          type="button"
+          onClick={() => setBookOpen(true)}
+          data-hover
+          className="inline-flex items-center gap-2 px-4 py-2 transition-all"
+          style={{
+            background: '#9ad03d',
+            color: '#000',
+            fontFamily: 'var(--font-inter), sans-serif',
+            fontWeight: 600,
+            fontSize: 11,
+            letterSpacing: '0.22em',
+            textTransform: 'uppercase',
+            boxShadow: '0 0 18px rgba(154,208,61,0.35)',
+          }}
         >
-          Let&apos;s talk
-        </a>
+          <span
+            className="inline-block w-1.5 h-1.5 rounded-full animate-pulse"
+            style={{ background: '#000' }}
+          />
+          Book a Meeting →
+        </button>
       </div>
+      <BookAppointment open={bookOpen} onClose={() => setBookOpen(false)} />
     </motion.nav>
   );
 }

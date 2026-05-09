@@ -6,6 +6,22 @@ import { profile } from '@/lib/data';
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
+const PHRASES = [
+  'नमस्ते, मैं भुवन हूँ।',
+  'வணக்கம், நான் புவன்.',
+  'హాయ్, నేను భువన్.',
+  'হাই, আমি ভুবন।',
+  'नमस्कार, मी भुवन आहे.',
+  'નમસ્તે, હું ભુવન છું.',
+  'ಹಾಯ್, ನಾನು ಭುವನ್.',
+  'ഹായ്, ഞാൻ ഭുവൻ.',
+  'ਹੈਲੋ, ਮੈਂ ਭੁਵਨ ਹਾਂ।',
+  'Hi, I am Bhuvan.',
+];
+
+const FINAL_INDEX = PHRASES.length - 1;
+const DECODE_CHARS = '01ABCDEF$%&*+=/<>?#@';
+
 export default function Hero() {
   const [time, setTime] = useState('');
 
@@ -47,13 +63,10 @@ export default function Hero() {
             lineHeight: 1.0,
             letterSpacing: '-0.04em',
             paddingBottom: '0.04em',
+            minHeight: '1.1em',
           }}
         >
-          <Reveal delay={0.8}>Hi,</Reveal>
-          <br />
-          <Reveal delay={0.95}>
-            I am <span className="text-ember-gradient">Bhuvan</span>.
-          </Reveal>
+          <HeroGreeting />
         </h1>
 
         <motion.div
@@ -88,16 +101,75 @@ export default function Hero() {
   );
 }
 
-function Reveal({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
-  return (
-    <span className="reveal-mask">
+function HeroGreeting() {
+  const [phraseIndex, setPhraseIndex] = useState(0);
+  const [started, setStarted] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setStarted(true), 600);
+    return () => clearTimeout(t);
+  }, []);
+
+  const isFinal = phraseIndex === FINAL_INDEX;
+  const target = PHRASES[phraseIndex];
+  const decodeMs = isFinal ? 900 : 380;
+  const dwellMs = isFinal ? 0 : 220;
+  const { text, settled } = useBitDecode(started ? target : '', decodeMs);
+
+  useEffect(() => {
+    if (!started || isFinal || !settled) return;
+    const t = setTimeout(() => setPhraseIndex((i) => i + 1), dwellMs);
+    return () => clearTimeout(t);
+  }, [started, settled, isFinal, dwellMs]);
+
+  if (isFinal && settled) {
+    return (
       <motion.span
-        initial={{ y: '110%' }}
-        animate={{ y: '0%' }}
-        transition={{ duration: 1.1, delay, ease }}
+        initial={{ opacity: 0.6 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.4 }}
       >
-        {children}
+        Hi, I am <span className="text-ember-gradient">Bhuvan</span>.
       </motion.span>
-    </span>
-  );
+    );
+  }
+
+  return <span style={{ whiteSpace: 'pre-wrap' }}>{text || '\u00A0'}</span>;
+}
+
+function useBitDecode(target: string, duration = 380) {
+  const [text, setText] = useState('');
+  const [settled, setSettled] = useState(false);
+
+  useEffect(() => {
+    if (!target) {
+      setText('');
+      setSettled(false);
+      return;
+    }
+    const chars = Array.from(target);
+    const start = Date.now();
+    let frame: number;
+    setSettled(false);
+
+    const tick = () => {
+      const t = Math.min(1, (Date.now() - start) / duration);
+      const reveal = Math.floor(t * chars.length);
+      let s = chars.slice(0, reveal).join('');
+      for (let i = reveal; i < chars.length; i++) {
+        s += DECODE_CHARS[Math.floor(Math.random() * DECODE_CHARS.length)];
+      }
+      setText(s);
+      if (t < 1) {
+        frame = requestAnimationFrame(tick);
+      } else {
+        setText(target);
+        setSettled(true);
+      }
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [target, duration]);
+
+  return { text, settled };
 }
