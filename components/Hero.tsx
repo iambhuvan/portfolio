@@ -6,20 +6,6 @@ import { profile } from '@/lib/data';
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
-const TARGET = 'Hi, I am Bhuvan.';
-
-// Standalone-renderable letters from 8 Indian scripts.
-const SCRIPT_CHARS = Array.from(
-  'अआइईउऊएऐओऔकखगघचछजझटठडढणतथदधनपफबभमयरलवशषसह' + // Devanagari
-    'அஆஇஈஉஊஎஏஐஒஓஔகஙசஞடணதநபமயரலவழஷஸஹ' + // Tamil
-    'అఆఇఈఉఊఎఏఐఒఓఔకఖగఘచఛజఝటఠడఢణతథదధనపఫబభమయరలవశషసహ' + // Telugu
-    'অআইঈউঊএঐওঔকখগঘঙচছজঝঞটঠডঢণতথদধনপফবভমযরলশষসহ' + // Bengali
-    'અઆઇઈઉઊએઐઓઔકખગઘચછજઝઞટઠડઢણતથદધનપફબભમયરલવશષસહ' + // Gujarati
-    'ಅಆಇಈಉಊಎಏಐಒಓಔಕಖಗಘಙಚಛಜಝಞಟಠಡಢಣತಥದಧನಪಫಬಭಮಯರಲವಶಷಸಹ' + // Kannada
-    'അആഇഈഉഊഎഏഐഒഓഔകഖഗഘങചഛജഝഞടഠഡഢണതഥദധനപഫബഭമയരലവശഷസഹ' + // Malayalam
-    'ਅਆਇਈਉਊਏਐਓਔਕਖਗਘਙਚਛਜਝਞਟਠਡਢਣਤਥਦਧਨਪਫਬਭਮਯਰਲਵਸਹ', // Gurmukhi
-);
-
 export default function Hero() {
   const [time, setTime] = useState('');
 
@@ -61,10 +47,13 @@ export default function Hero() {
             lineHeight: 1.0,
             letterSpacing: '-0.04em',
             paddingBottom: '0.04em',
-            minHeight: '1.1em',
           }}
         >
-          <HeroGreeting />
+          <Reveal delay={0.8}>Hi,</Reveal>
+          <br />
+          <Reveal delay={0.95}>
+            I am <span className="text-ember-gradient">Bhuvan</span>.
+          </Reveal>
         </h1>
 
         <motion.div
@@ -99,88 +88,16 @@ export default function Hero() {
   );
 }
 
-function HeroGreeting() {
-  const [started, setStarted] = useState(false);
-
-  useEffect(() => {
-    const t = setTimeout(() => setStarted(true), 500);
-    return () => clearTimeout(t);
-  }, []);
-
-  const { chars, done } = useScriptScramble(started ? TARGET : '', 2400);
-
-  if (done) {
-    return (
-      <motion.span
-        initial={{ opacity: 0.85 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.3 }}
-      >
-        Hi, I am <span className="text-ember-gradient">Bhuvan</span>.
-      </motion.span>
-    );
-  }
-
+function Reveal({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
   return (
-    <span aria-label={TARGET}>
-      {chars.map((c, i) => (
-        <span key={i} aria-hidden style={{ display: 'inline-block', minWidth: c === ' ' ? '0.4em' : undefined }}>
-          {c === ' ' ? '\u00A0' : c}
-        </span>
-      ))}
+    <span className="reveal-mask">
+      <motion.span
+        initial={{ y: '110%' }}
+        animate={{ y: '0%' }}
+        transition={{ duration: 1.1, delay, ease }}
+      >
+        {children}
+      </motion.span>
     </span>
   );
-}
-
-// Each character of `target` independently morphs through random Indian-script
-// glyphs and then resolves to its English target at a staggered time within `duration`.
-function useScriptScramble(target: string, duration = 2400) {
-  const [chars, setChars] = useState<string[]>(() =>
-    target ? Array.from(target).map(() => '\u00A0') : [],
-  );
-  const [done, setDone] = useState(false);
-
-  useEffect(() => {
-    if (!target) {
-      setChars([]);
-      setDone(false);
-      return;
-    }
-    const targetChars = Array.from(target);
-    const n = targetChars.length;
-
-    // Each letter resolves at a slightly different time. Earlier letters land
-    // first to give a "left-to-right settling" feel, but with jitter so it's
-    // not a perfect sweep.
-    const resolveAt = targetChars.map((c, i) => {
-      if (c === ' ' || c === ',' || c === '.') return 0; // punctuation locks immediately
-      const base = duration * (0.35 + 0.55 * (i / Math.max(1, n - 1)));
-      const jitter = (Math.random() - 0.5) * duration * 0.18;
-      return base + jitter;
-    });
-
-    const start = Date.now();
-    let frame: number;
-    setDone(false);
-
-    const tick = () => {
-      const elapsed = Date.now() - start;
-      let allResolved = true;
-      const next = targetChars.map((c, i) => {
-        if (elapsed >= resolveAt[i]) return c;
-        allResolved = false;
-        return SCRIPT_CHARS[Math.floor(Math.random() * SCRIPT_CHARS.length)];
-      });
-      setChars(next);
-      if (allResolved) {
-        setDone(true);
-      } else {
-        frame = requestAnimationFrame(tick);
-      }
-    };
-    frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
-  }, [target, duration]);
-
-  return { chars, done };
 }
