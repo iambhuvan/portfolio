@@ -7,6 +7,7 @@ import About from '@/components/About';
 import Projects from '@/components/Projects';
 import Experience from '@/components/Experience';
 import Skills from '@/components/Skills';
+import Resume from '@/components/Resume';
 import Contact from '@/components/Contact';
 import SmoothScroll from '@/components/SmoothScroll';
 import Marquee from '@/components/Marquee';
@@ -26,6 +27,7 @@ export default function Home() {
         <Projects />
         <Experience />
         <Skills />
+        <Resume />
         <Contact />
       </main>
     </SmoothScroll>

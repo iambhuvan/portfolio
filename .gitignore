@@ -41,3 +41,6 @@ next-env.d.ts
 # user reference docs (kept locally, not committed)
 *.pdf
 *.docx
+
+# but DO commit the public-facing resume served by the site
+!public/resume.pdf
