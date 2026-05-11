@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 const ease = [0.16, 1, 0.3, 1] as const;
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH || '';
 const PDF_URL = `${BASE}/resume.pdf`;
-const LAST_UPDATED = 'December 2025';
+const LAST_UPDATED = 'Apr 2026';
 
 export default function Resume() {
   return (
