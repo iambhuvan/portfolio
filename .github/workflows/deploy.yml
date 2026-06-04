@@ -19,10 +19,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      # Default GitHub Pages URL is https://<user>.github.io/<repo>/.
-      # Setting these makes Next emit URL-correct asset paths and metadata.
-      NEXT_PUBLIC_BASE_PATH: /portfolio
-      NEXT_PUBLIC_SITE_URL: https://iambhuvan.github.io/portfolio
+      NEXT_PUBLIC_SITE_URL: https://bhuvannallamothu.com
     steps:
       - name: Checkout
         uses: actions/checkout@v4
