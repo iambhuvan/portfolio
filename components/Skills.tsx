@@ -17,7 +17,7 @@ export default function Skills() {
           className="border-b border-amber-200/10 pb-8 mb-16"
         >
           <span className="mono text-[10px] uppercase tracking-[0.3em] text-amber-300/50">
-            (04) Stack
+            (03) Stack
           </span>
           <h2 className="display text-amber-50 text-5xl md:text-7xl mt-3">
             Tools of the <em className="text-ember-gradient">trade.</em>

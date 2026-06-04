@@ -27,7 +27,7 @@ export default function Contact() {
           transition={{ duration: 1, ease }}
         >
           <span className="mono text-[10px] uppercase tracking-[0.3em] text-amber-300/50">
-            (06) Get in touch
+            (05) Get in touch
           </span>
           <h2 className="display text-amber-50 text-[clamp(3rem,11vw,10rem)] mt-4 leading-[0.92]">
             Let&apos;s build the <br />

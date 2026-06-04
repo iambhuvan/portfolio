@@ -20,7 +20,7 @@ export default function Resume() {
           <div className="flex flex-wrap items-end justify-between gap-6 mb-10">
             <div>
               <span className="mono text-[10px] uppercase tracking-[0.3em] text-amber-300/50">
-                (05) Resume
+                (04) Resume
               </span>
               <h2 className="display text-amber-50 text-[clamp(2.5rem,7vw,6rem)] mt-4 leading-[0.95]">
                 The <em className="text-ember-gradient">full record</em>.
