@@ -35,9 +35,11 @@ export default function Experience() {
               className="relative"
             >
               <span className="absolute -left-[42px] md:-left-[74px] top-1 w-3 h-3 rounded-full bg-ember shadow-[0_0_20px_rgba(255,122,24,0.7)]" />
-              <span className="mono text-[10px] uppercase tracking-[0.3em] text-amber-300/50">
-                {e.period}
-              </span>
+              {e.period && (
+                <span className="mono text-[10px] uppercase tracking-[0.3em] text-amber-300/50">
+                  {e.period}
+                </span>
+              )}
               <h3 className="display text-3xl md:text-4xl text-amber-50 mt-2">{e.role}</h3>
               <p className="text-amber-200/70 mono text-sm mt-2 uppercase tracking-[0.15em]">
                 {e.org}

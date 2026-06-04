@@ -413,7 +413,7 @@ export const experience = [
   {
     role: 'AWS Annapurna — Trainium Kernel Challenge',
     org: 'AWS Open Competition',
-    period: '2026',
+    period: '',
     description:
       'Top-15 finish writing custom NKI kernels for a 30B MoE model on Trainium2. Advanced to Trainium3 round 2 with the top teams.',
   },

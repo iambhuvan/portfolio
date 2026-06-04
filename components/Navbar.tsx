@@ -41,8 +41,9 @@ export default function Navbar() {
     >
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         <a
-          href="#top"
-          onClick={(e) => onClickLink(e, '#top')}
+          href="https://www.linkedin.com/in/bhuvan-nallamothu-784a061a6/"
+          target="_blank"
+          rel="noopener noreferrer"
           className="text-base md:text-lg tracking-tight text-amber-50 hover:text-ember transition-colors whitespace-nowrap"
           style={{ fontFamily: 'var(--font-inter), system-ui, sans-serif', fontWeight: 600 }}
         >
