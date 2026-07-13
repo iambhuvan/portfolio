@@ -14,17 +14,17 @@ export default function Skills() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.3 }}
           transition={{ duration: 1, ease }}
-          className="border-b border-amber-200/10 pb-8 mb-16"
+          className="border-b border-amber-200/10 pb-6 sm:pb-8 mb-10 sm:mb-16"
         >
           <span className="mono text-[10px] uppercase tracking-[0.3em] text-amber-300/50">
             (03) Stack
           </span>
-          <h2 className="display text-amber-50 text-5xl md:text-7xl mt-3">
+          <h2 className="display text-amber-50 text-[clamp(1.85rem,8vw,4.5rem)] md:text-7xl mt-3 leading-[1.1]">
             Tools of the <em className="text-ember-gradient">trade.</em>
           </h2>
         </motion.div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-px bg-amber-200/10">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-px bg-amber-200/10">
           {skills.map((g, i) => (
             <motion.div
               key={g.group}
@@ -32,7 +32,7 @@ export default function Skills() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.4 }}
               transition={{ duration: 0.8, delay: i * 0.08, ease }}
-              className="bg-ink-900 p-8 group hover:bg-ink-800 transition-colors"
+              className="bg-ink-900 p-5 sm:p-8 group hover:bg-ink-800 transition-colors"
             >
               <div className="flex items-baseline justify-between mb-6">
                 <h3 className="display text-2xl text-amber-50">{g.group}</h3>

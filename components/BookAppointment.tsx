@@ -111,7 +111,7 @@ export default function BookAppointment({ open, onClose }: { open: boolean; onCl
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 flex items-center justify-center px-4 py-8 overflow-y-auto"
+          className="fixed inset-0 flex items-end sm:items-center justify-center px-3 sm:px-4 py-0 sm:py-8 overflow-y-auto"
           style={{ zIndex: 9999 }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -129,7 +129,7 @@ export default function BookAppointment({ open, onClose }: { open: boolean; onCl
 
           {/* modal */}
           <motion.div
-            className="relative w-full max-w-lg my-auto"
+            className="relative w-full max-w-lg my-0 sm:my-auto max-h-[92svh] sm:max-h-none overflow-y-auto"
             initial={{ scale: 0.94, opacity: 0, y: 24 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.96, opacity: 0 }}
@@ -145,10 +145,10 @@ export default function BookAppointment({ open, onClose }: { open: boolean; onCl
             >
               {/* header */}
               <div
-                className="flex items-center justify-between border-b px-6 py-4"
+                className="flex items-start justify-between border-b px-4 sm:px-6 py-4 gap-3"
                 style={{ borderColor: 'rgba(118,185,0,0.18)' }}
               >
-                <div>
+                <div className="min-w-0">
                   <div
                     className="text-[10px] uppercase tracking-[0.32em] flex items-center gap-2"
                     style={{ color: '#9ad03d', fontFamily: 'var(--font-inter), sans-serif' }}
@@ -164,7 +164,7 @@ export default function BookAppointment({ open, onClose }: { open: boolean; onCl
                     style={{
                       fontFamily: 'var(--font-display), serif',
                       fontStyle: 'italic',
-                      fontSize: '1.6rem',
+                      fontSize: 'clamp(1.25rem, 5vw, 1.6rem)',
                     }}
                   >
                     Pick a time. <span style={{ color: '#9ad03d' }}>I&apos;ll confirm.</span>
@@ -174,7 +174,7 @@ export default function BookAppointment({ open, onClose }: { open: boolean; onCl
                   onClick={() => {
                     if (status !== 'sending') onClose();
                   }}
-                  className="text-amber-100/60 hover:text-ember transition-colors"
+                  className="text-amber-100/60 hover:text-ember transition-colors shrink-0 p-1"
                   aria-label="Close"
                   disabled={status === 'sending'}
                 >
@@ -185,7 +185,7 @@ export default function BookAppointment({ open, onClose }: { open: boolean; onCl
               </div>
 
               {/* body */}
-              <div className="px-6 py-6">
+              <div className="px-4 sm:px-6 py-5 sm:py-6">
                 {status === 'success' ? (
                   <SuccessView name={form.name} onClose={onClose} onAnother={reset} />
                 ) : (
@@ -222,7 +222,7 @@ export default function BookAppointment({ open, onClose }: { open: boolean; onCl
                       />
                     </Field>
 
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <Field label="Date" required>
                         <input
                           type="date"
@@ -238,11 +238,11 @@ export default function BookAppointment({ open, onClose }: { open: boolean; onCl
                     </div>
 
                     <div
-                      className="text-[10px] uppercase tracking-[0.16em] flex items-center justify-between"
+                      className="text-[10px] uppercase tracking-[0.16em] flex flex-wrap items-center justify-between gap-2"
                       style={{ color: 'rgba(255, 245, 224, 0.5)', fontFamily: 'var(--font-inter), sans-serif' }}
                     >
                       <span>Timezone</span>
-                      <span style={{ color: 'rgba(255, 245, 224, 0.85)' }}>{form.timezone}</span>
+                      <span className="break-all" style={{ color: 'rgba(255, 245, 224, 0.85)' }}>{form.timezone}</span>
                     </div>
 
                     {status === 'error' && errorMsg && (
@@ -259,9 +259,9 @@ export default function BookAppointment({ open, onClose }: { open: boolean; onCl
                       </div>
                     )}
 
-                    <div className="flex items-center justify-between pt-2 gap-3">
+                    <div className="flex flex-col-reverse sm:flex-row sm:items-center justify-between pt-2 gap-3">
                       <span
-                        className="text-[10px] uppercase tracking-[0.18em]"
+                        className="text-[10px] uppercase tracking-[0.18em] text-center sm:text-left"
                         style={{ color: 'rgba(255, 245, 224, 0.45)', fontFamily: 'var(--font-inter), sans-serif' }}
                       >
                         I usually reply within 24h
@@ -269,7 +269,7 @@ export default function BookAppointment({ open, onClose }: { open: boolean; onCl
                       <button
                         type="submit"
                         disabled={status === 'sending'}
-                        className="px-5 py-2.5 transition-all text-[11px] uppercase tracking-[0.2em] disabled:opacity-50"
+                        className="w-full sm:w-auto px-5 py-2.5 transition-all text-[11px] uppercase tracking-[0.2em] disabled:opacity-50"
                         style={{
                           background: '#9ad03d',
                           color: '#000',

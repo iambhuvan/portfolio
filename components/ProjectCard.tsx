@@ -13,49 +13,53 @@ export default function ProjectCard({ project, index }: { project: Project; inde
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.2 }}
       transition={{ duration: 1.2, ease }}
-      className="grid md:grid-cols-12 gap-8 group"
+      className="grid md:grid-cols-12 gap-5 sm:gap-8 group"
     >
       <div className={`md:col-span-5 ${flip ? 'md:order-2' : ''}`}>
         <div
-          className="relative aspect-[4/5] rounded-2xl overflow-hidden border border-amber-200/10"
+          className="relative aspect-[16/10] sm:aspect-[4/5] rounded-xl sm:rounded-2xl overflow-hidden border border-amber-200/10"
           style={{
             background: `radial-gradient(120% 80% at 30% 20%, ${project.accent}26 0%, transparent 60%), linear-gradient(180deg, #15100c 0%, #070403 100%)`,
           }}
         >
           <ProjectVisual project={project} />
-          <div className="absolute top-4 left-4 mono text-[10px] uppercase tracking-[0.3em] text-amber-200/60">
+          <div className="absolute top-3 left-3 sm:top-4 sm:left-4 mono text-[9px] sm:text-[10px] uppercase tracking-[0.2em] sm:tracking-[0.3em] text-amber-200/60">
             {String(index + 1).padStart(2, '0')} / {project.category}
           </div>
-          <div className="absolute bottom-4 right-4 mono text-[10px] uppercase tracking-[0.3em] text-amber-200/40">
+          <div className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 mono text-[9px] sm:text-[10px] uppercase tracking-[0.2em] sm:tracking-[0.3em] text-amber-200/40">
             {project.year}
           </div>
         </div>
       </div>
 
-      <div className={`md:col-span-7 flex flex-col justify-center ${flip ? 'md:order-1 md:pr-12' : 'md:pl-8'}`}>
-        <span className="mono text-[10px] uppercase tracking-[0.3em] text-amber-300/50 mb-4">
+      <div className={`md:col-span-7 flex flex-col justify-center min-w-0 ${flip ? 'md:order-1 md:pr-12' : 'md:pl-8'}`}>
+        <span className="mono text-[10px] uppercase tracking-[0.3em] text-amber-300/50 mb-3 sm:mb-4">
           {project.category} · {project.year}
         </span>
-        <h3 className="display text-amber-50 text-4xl md:text-6xl mb-3">{project.name}</h3>
-        <p className="text-ember-gradient text-xl md:text-2xl italic font-display mb-6">
+        <h3 className="display text-amber-50 text-[clamp(1.6rem,6.5vw,3.75rem)] md:text-6xl mb-2 sm:mb-3 leading-[1.1] break-words">
+          {project.name}
+        </h3>
+        <p className="text-ember-gradient text-lg sm:text-xl md:text-2xl italic font-display mb-4 sm:mb-6 leading-snug">
           {project.pitch}
         </p>
-        <p className="text-amber-100/70 leading-relaxed mb-6 max-w-xl">{project.description}</p>
+        <p className="text-amber-100/70 text-sm sm:text-base leading-relaxed mb-5 sm:mb-6 max-w-xl">
+          {project.description}
+        </p>
 
-        <ul className="space-y-2 mb-8 max-w-xl">
+        <ul className="space-y-2 mb-6 sm:mb-8 max-w-xl">
           {project.highlights.map((h, i) => (
-            <li key={i} className="flex gap-3 text-amber-100/60 text-sm">
-              <span className="mono text-ember mt-1">→</span>
-              <span>{h}</span>
+            <li key={i} className="flex gap-2 sm:gap-3 text-amber-100/60 text-sm">
+              <span className="mono text-ember mt-0.5 shrink-0">→</span>
+              <span className="min-w-0">{h}</span>
             </li>
           ))}
         </ul>
 
-        <div className="flex flex-wrap gap-2 mb-6 max-w-xl">
+        <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-5 sm:mb-6 max-w-xl">
           {project.stack.map((s) => (
             <span
               key={s}
-              className="mono text-[10px] uppercase tracking-[0.2em] text-amber-200/70 border border-amber-200/15 px-3 py-1.5 rounded-full"
+              className="mono text-[9px] sm:text-[10px] uppercase tracking-[0.14em] sm:tracking-[0.2em] text-amber-200/70 border border-amber-200/15 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full"
             >
               {s}
             </span>
@@ -63,12 +67,24 @@ export default function ProjectCard({ project, index }: { project: Project; inde
         </div>
 
         {project.metric && (
-          <div className="border-l-2 border-ember/60 pl-4">
-            <div className="display text-3xl text-amber-50">{project.metric.value}</div>
-            <div className="mono text-[10px] uppercase tracking-[0.25em] text-amber-300/60 mt-1">
+          <div className="border-l-2 border-ember/60 pl-4 min-w-0">
+            <div className="display text-2xl sm:text-3xl text-amber-50 break-words">{project.metric.value}</div>
+            <div className="mono text-[9px] sm:text-[10px] uppercase tracking-[0.16em] sm:tracking-[0.25em] text-amber-300/60 mt-1 leading-snug break-words">
               {project.metric.label}
             </div>
           </div>
+        )}
+
+        {project.link && (
+          <a
+            href={project.link}
+            target="_blank"
+            rel="noreferrer"
+            data-hover
+            className="inline-flex items-center gap-2 mt-5 sm:mt-6 mono text-[11px] uppercase tracking-[0.2em] text-ember link-underline w-fit"
+          >
+            View project ↗
+          </a>
         )}
       </div>
     </motion.article>

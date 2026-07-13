@@ -113,11 +113,21 @@ export default function ChipDieBackground({
   const [tick, setTick] = useState(0);
   const [inHero, setInHero] = useState(true);
   const [chipZoomed, setChipZoomed] = useState(false);
+  const [isNarrow, setIsNarrow] = useState(false);
+
+  // Mobile / tablet: hide side-info + fleet panel so hero copy isn't overlapped.
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 1023px), (hover: none)');
+    const update = () => setIsNarrow(mq.matches);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, []);
 
   // Compute chip-zoom from raw cursor position vs the chip die's screen bounds.
   // This bypasses any DOM event blocking and works regardless of overlapping wrappers.
   useEffect(() => {
-    if (!mouse || !inHero) {
+    if (isNarrow || !mouse || !inHero) {
       if (chipZoomed) setChipZoomed(false);
       return;
     }
@@ -146,14 +156,14 @@ export default function ChipDieBackground({
     const inside =
       mouse.x >= left && mouse.x <= right && mouse.y >= top && mouse.y <= bottom;
     if (inside !== chipZoomed) setChipZoomed(inside);
-  }, [mouse, inHero, chipZoomed]);
+  }, [mouse, inHero, chipZoomed, isNarrow]);
 
   // Toggle body class for content push-back when chip is hovered
   useEffect(() => {
-    if (chipZoomed && inHero) document.body.classList.add('chip-zoom');
+    if (chipZoomed && inHero && !isNarrow) document.body.classList.add('chip-zoom');
     else document.body.classList.remove('chip-zoom');
     return () => document.body.classList.remove('chip-zoom');
-  }, [chipZoomed, inHero]);
+  }, [chipZoomed, inHero, isNarrow]);
 
   useEffect(() => {
     const id = setInterval(() => setTick((t) => t + 1), 60);
@@ -217,15 +227,15 @@ export default function ChipDieBackground({
           />
         )}
 
-        {/* DIE — occupies the left portion · zooms forward on hover · dimmed by default so hero text reads as foreground */}
+        {/* DIE — left on desktop; full-bleed subtle backdrop on mobile */}
         <div
           className="absolute inset-0 transition-all duration-700"
           style={{
-            transform: chipZoomed ? 'scale(1.16)' : 'scale(1)',
-            transformOrigin: '36% 50%',
+            transform: chipZoomed && !isNarrow ? 'scale(1.16)' : 'scale(1)',
+            transformOrigin: isNarrow ? '50% 40%' : '36% 50%',
             transitionTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)',
-            filter: chipZoomed ? 'drop-shadow(0 0 80px rgba(118,185,0,0.55))' : 'none',
-            opacity: chipZoomed ? 1 : 0.4,
+            filter: chipZoomed && !isNarrow ? 'drop-shadow(0 0 80px rgba(118,185,0,0.55))' : 'none',
+            opacity: isNarrow ? 0.22 : chipZoomed ? 1 : 0.4,
             pointerEvents: 'none', // SVG inside still has pointerEvents: auto
           }}
         >
@@ -233,21 +243,36 @@ export default function ChipDieBackground({
             chip={chip}
             chipKey={chipIdx}
             zone={zone}
-            setZone={setZone}
+            setZone={isNarrow ? () => {} : setZone}
             tick={tick}
-            onChipEnter={() => setChipZoomed(true)}
+            interactive={!isNarrow}
+            onChipEnter={() => {
+              if (!isNarrow) setChipZoomed(true);
+            }}
             onChipLeave={() => setChipZoomed(false)}
           />
         </div>
 
-        {/* SIDE INFO — beside the chip, in the right empty space */}
-        <div
-          className="absolute inset-0 transition-opacity duration-500"
-          style={{ opacity: inHero ? 1 : 0, pointerEvents: 'none' }}
-        >
-          <SideInfo chip={chip} chipKey={chipIdx} zone={zone} format={format} theme={T} />
-        </div>
-        {/* TELEMETRY strip dim when chip not zoomed — keeps focus on hero copy */}
+        {/* SIDE INFO — desktop only (minWidth 340 overlaps phones) */}
+        {!isNarrow && (
+          <div
+            className="absolute inset-0 transition-opacity duration-500"
+            style={{ opacity: inHero ? 1 : 0, pointerEvents: 'none' }}
+          >
+            <SideInfo chip={chip} chipKey={chipIdx} zone={zone} format={format} theme={T} />
+          </div>
+        )}
+
+        {/* Extra readability scrim on narrow viewports */}
+        {isNarrow && (
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              background:
+                'linear-gradient(180deg, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.15) 35%, rgba(0,0,0,0.55) 100%)',
+            }}
+          />
+        )}
 
         {/* vignette — must not capture pointer events */}
         <div
@@ -258,7 +283,7 @@ export default function ChipDieBackground({
         />
       </div>
 
-      {/* CHIP SELECTOR — right column, beneath the side info panel · hidden after hero */}
+      {/* CHIP SELECTOR — desktop only */}
       <div
         className="fixed z-30 transition-opacity duration-500"
         style={{
@@ -267,8 +292,9 @@ export default function ChipDieBackground({
           width: 'min(30vw, 440px)',
           minWidth: 340,
           fontFamily: 'var(--font-mono), monospace',
-          opacity: inHero ? 1 : 0,
-          pointerEvents: inHero ? 'auto' : 'none',
+          opacity: !isNarrow && inHero ? 1 : 0,
+          pointerEvents: !isNarrow && inHero ? 'auto' : 'none',
+          visibility: isNarrow ? 'hidden' : 'visible',
         }}
       >
         <div
@@ -894,6 +920,7 @@ function FullDie({
   tick,
   onChipEnter,
   onChipLeave,
+  interactive = true,
 }: {
   chip: ChipSpec;
   chipKey: number;
@@ -902,13 +929,14 @@ function FullDie({
   tick: number;
   onChipEnter?: () => void;
   onChipLeave?: () => void;
+  interactive?: boolean;
 }) {
   // ============== Layout: Substrate → CoWoS interposer → Die + HBM ==============
   const W = 1600;
   const H = 1000;
   const padLeft = 60;
-  const padRight = 540;
-  const padY = 130;
+  const padRight = interactive ? 540 : 60;
+  const padY = interactive ? 130 : 80;
 
   // Substrate (organic substrate · BGA on bottom)
   const subX = padLeft;
@@ -983,8 +1011,9 @@ function FullDie({
       viewBox={`0 0 ${W} ${H}`}
       preserveAspectRatio="xMidYMid meet"
       className="absolute inset-0 w-full h-full"
-      style={{ pointerEvents: 'auto' }}
+      style={{ pointerEvents: interactive ? 'auto' : 'none' }}
       onMouseLeave={() => {
+        if (!interactive) return;
         setZone(null);
         onChipLeave?.();
       }}
