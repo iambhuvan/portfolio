@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 const ease = [0.16, 1, 0.3, 1] as const;
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH || '';
 const PDF_URL = `${BASE}/resume.pdf`;
-const LAST_UPDATED = 'June 2026';
+const LAST_UPDATED = 'August 2026';
 
 export default function Resume() {
   return (
@@ -109,7 +109,7 @@ export default function Resume() {
                 resume.pdf
               </div>
               <span style={{ color: 'rgba(255,245,224,0.4)' }}>
-                1 page · 80 KB · v.{LAST_UPDATED.replace(' ', '-')}
+                1 page · 78 KB · v.{LAST_UPDATED.replace(' ', '-')}
               </span>
             </div>
 
